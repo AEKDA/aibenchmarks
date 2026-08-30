@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i webhookdispatcher/internal/application/ports.Sender -o sender_mock_test.go -n SenderMock -p mocks
+//go:generate minimock -i webhookdispatcher/internal/application/ports.Sender -o sender_mock.go -n SenderMock -p mocks
 
 import (
 	"context"

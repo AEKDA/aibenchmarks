@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i webhookdispatcher/internal/application/ports.EventRepo -o event_repo_mock_test.go -n EventRepoMock -p mocks
+//go:generate minimock -i webhookdispatcher/internal/application/ports.EventRepo -o event_repo_mock.go -n EventRepoMock -p mocks
 
 import (
 	"context"

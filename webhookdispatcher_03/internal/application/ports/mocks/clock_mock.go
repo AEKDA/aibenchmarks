@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i webhookdispatcher/internal/application/ports.Clock -o clock_mock_test.go -n ClockMock -p mocks
+//go:generate minimock -i webhookdispatcher/internal/application/ports.Clock -o clock_mock.go -n ClockMock -p mocks
 
 import (
 	"sync"

@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i webhookdispatcher/internal/application/ports.SubscriptionRepo -o subscription_repo_mock_test.go -n SubscriptionRepoMock -p mocks
+//go:generate minimock -i webhookdispatcher/internal/application/ports.SubscriptionRepo -o subscription_repo_mock.go -n SubscriptionRepoMock -p mocks
 
 import (
 	"context"

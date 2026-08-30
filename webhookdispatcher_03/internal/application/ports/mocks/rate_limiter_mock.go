@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i webhookdispatcher/internal/application/ports.RateLimiter -o rate_limiter_mock_test.go -n RateLimiterMock -p mocks
+//go:generate minimock -i webhookdispatcher/internal/application/ports.RateLimiter -o rate_limiter_mock.go -n RateLimiterMock -p mocks
 
 import (
 	"context"
