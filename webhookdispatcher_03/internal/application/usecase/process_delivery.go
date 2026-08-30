@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"net/url"
-	"time"
 
 	"webhookdispatcher/internal/application/entity"
 	"webhookdispatcher/internal/application/instruction"
@@ -17,12 +16,11 @@ type ProcessDelivery struct {
 	subs       ports.SubscriptionRepo
 	sender     ports.Sender
 	rl         ports.RateLimiter
-	now        func() time.Time
 }
 
 // NewProcessDelivery собирает сценарий доставки.
-func NewProcessDelivery(deliveries ports.DeliveryRepo, subs ports.SubscriptionRepo, sender ports.Sender, rl ports.RateLimiter, now func() time.Time) *ProcessDelivery {
-	return &ProcessDelivery{deliveries: deliveries, subs: subs, sender: sender, rl: rl, now: now}
+func NewProcessDelivery(deliveries ports.DeliveryRepo, subs ports.SubscriptionRepo, sender ports.Sender, rl ports.RateLimiter) *ProcessDelivery {
+	return &ProcessDelivery{deliveries: deliveries, subs: subs, sender: sender, rl: rl}
 }
 
 // Invoke исполняет доставку задачи d.

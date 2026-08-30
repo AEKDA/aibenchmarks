@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -22,7 +21,12 @@ func TestProcessDeliveryDelivered(t *testing.T) {
 		return entity.Subscription{ID: id, URL: "https://s/h", Secret: "shh", MaxRPS: 1}, nil
 	})
 	rl := mocks.NewRateLimiterMock(t)
-	rl.AllowMock.Set(func(_ context.Context, host string) error { return nil })
+	rl.AllowMock.Set(func(_ context.Context, host string) error {
+		if host != "s" {
+			t.Fatalf("host=%q want s", host)
+		}
+		return nil
+	})
 	sender := mocks.NewSenderMock(t)
 	sender.SendMock.Set(func(_ context.Context, url, ua, sig string, payload []byte) (int, error) {
 		if url != "https://s/h" {
@@ -41,7 +45,7 @@ func TestProcessDeliveryDelivered(t *testing.T) {
 		return nil
 	})
 
-	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl, func() time.Time { return mustTime(t, "2026-01-01T00:00:00Z") })
+	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl)
 	if err := uc.Invoke(ctx, d); err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +73,7 @@ func TestProcessDeliveryNetworkFailureRetries(t *testing.T) {
 		return nil
 	})
 
-	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl, func() time.Time { return mustTime(t, "2026-01-01T00:00:00Z") })
+	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl)
 	if err := uc.Invoke(ctx, d); err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +101,7 @@ func TestProcessDeliveryExhaustedAttemptsDeadLetter(t *testing.T) {
 		return nil
 	})
 
-	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl, func() time.Time { return mustTime(t, "2026-01-01T00:00:00Z") })
+	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl)
 	if err := uc.Invoke(ctx, d); err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +120,7 @@ func TestProcessDeliveryGetByIDError(t *testing.T) {
 	sender := mocks.NewSenderMock(t)
 	deliveryRepo := mocks.NewDeliveryRepoMock(t)
 
-	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl, func() time.Time { return mustTime(t, "2026-01-01T00:00:00Z") })
+	uc := NewProcessDelivery(deliveryRepo, subRepo, sender, rl)
 	gotErr := uc.Invoke(ctx, d)
 	if gotErr == nil {
 		t.Fatal("ожидалась ошибка, got nil")
