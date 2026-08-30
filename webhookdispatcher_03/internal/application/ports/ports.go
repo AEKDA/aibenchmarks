@@ -11,6 +11,7 @@ import (
 	"webhookdispatcher/internal/application/entity"
 )
 
+//go:generate minimock -i SubscriptionRepo -o ./mocks -p mocks
 // SubscriptionRepo хранилище подписчиков.
 type SubscriptionRepo interface {
 	Save(ctx context.Context, s entity.Subscription) error
@@ -25,6 +26,7 @@ type OutboxResult struct {
 	Duplicate   bool // true, если idempotency-ключ уже был применён
 }
 
+//go:generate minimock -i EventRepo -o ./mocks -p mocks
 // EventRepo хранилище событий с идемпотентностью по ключу.
 type EventRepo interface {
 	// SaveWithin откладывает запись события и доставок в открытую транзакцию;
@@ -32,6 +34,7 @@ type EventRepo interface {
 	SaveWithin(ctx context.Context, idempotencyKey string, ev entity.Event, del []entity.Delivery) (OutboxResult, error)
 }
 
+//go:generate minimock -i DeliveryRepo -o ./mocks -p mocks
 // DeliveryRepo хранилище доставок с конкурентным забором задач.
 type DeliveryRepo interface {
 	// ClaimNext захватывает до n задач PENDING или готовых RETRYING (SKIP LOCKED),
@@ -42,18 +45,21 @@ type DeliveryRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (entity.Delivery, error)
 }
 
+//go:generate minimock -i Sender -o ./mocks -p mocks
 // Sender исходящий HTTP-клиент к подписчику.
 type Sender interface {
 	// Send доставляет payload по URL с подписью. Возвращает HTTP-статус.
 	Send(ctx context.Context, url, userAgent, signature string, payload []byte) (int, error)
 }
 
+//go:generate minimock -i RateLimiter -o ./mocks -p mocks
 // RateLimiter ограничивает RPS на хост.
 type RateLimiter interface {
 	// Allow блокирует до появления слота для хоста. Ошибка — если хоста нет в конфиге.
 	Allow(ctx context.Context, host string) error
 }
 
+//go:generate minimock -i Clock -o ./mocks -p mocks
 // Clock абстракция времени для тестов.
 type Clock interface {
 	Now() time.Time
