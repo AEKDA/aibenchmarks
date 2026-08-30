@@ -12,6 +12,7 @@ const ModulePath = "github.com/aenigmma/webhookdispatcher"
 const (
 	applicationPrefix = "internal/application"
 	adapterPrefix     = "internal/adapter/"
+	configPrefix      = "internal/config"
 	cmdPrefix         = "cmd/"
 )
 
@@ -44,6 +45,13 @@ func Check(pkg, importPath string) *Violation {
 	}
 
 	internal, isInternal := strings.CutPrefix(importPath, ModulePath+"/")
+
+	// Окружение читается только в composition root: любой другой слой не должен
+	// тянуть конфигурацию (а вслед за ней и зависимость от окружения).
+	if isInternal && (internal == configPrefix || strings.HasPrefix(internal, configPrefix+"/")) &&
+		!strings.HasPrefix(pkg, cmdPrefix) && !strings.HasPrefix(pkg, configPrefix) {
+		return deny("окружение читается только в composition root (" + cmdPrefix + ")")
+	}
 
 	switch {
 	case pkg == applicationPrefix || strings.HasPrefix(pkg, applicationPrefix+"/"):

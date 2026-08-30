@@ -2,7 +2,7 @@
 title: 'Скелет сервиса с жёсткими границами слоёв'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review' # draft | ready-for-dev | in-progress | in-review | done
+status: 'done' # draft | ready-for-dev | in-progress | in-review | done
 baseline_commit: 'NO_VCS'
 review_loop_iteration: 0
 context:
@@ -117,3 +117,62 @@ rules := []struct{ pkgPrefix string; allow func(string) bool }{
 
 **Manual checks (if no CLI):**
 - Временно добавить `import "github.com/jackc/pgx/v5"` в файл внутри `internal/application` и убедиться, что `go test ./...` падает, затем откатить.
+
+## Suggested Review Order
+
+**Жизненный цикл и composition root**
+
+- Единственное место чтения окружения и связывания адаптеров: точка входа для понимания дизайна.
+  [`main.go:38`](../../cmd/dispatcher/main.go#L38)
+
+- Обработка сигналов и кодов возврата поверх `run`.
+  [`main.go:23`](../../cmd/dispatcher/main.go#L23)
+
+**Валидация конфигурации**
+
+- Сбор всех проблем разом, а не по одному за запуск.
+  [`config.go:52`](../../internal/config/config.go#L52)
+
+- Инвариант «аренда больше отправки» — защита от реапера.
+  [`config.go:106`](../../internal/config/config.go#L106)
+
+**HTTP-адаптер и graceful shutdown**
+
+- `Run` возвращается только после полной остановки, без утечки горутин.
+  [`server.go:102`](../../internal/adapter/driver/http/server.go#L102)
+
+- Shutdown отвязан от отменённого родителя, чтобы дообработать начатые запросы.
+  [`server.go:136`](../../internal/adapter/driver/http/server.go#L136)
+
+- Единственный доступный на этом этапе маршрут `GET /healthz`.
+  [`server.go:29`](../../internal/adapter/driver/http/server.go#L29)
+
+**Правила границ слоёв**
+
+- Чистая функция направления импортов, проверяемая таблицей.
+  [`arch.go:47`](../../internal/arch/arch.go#L47)
+
+- Новое правило: окружение читается только в composition root.
+  [`arch.go:52`](../../internal/arch/arch.go#L52)
+
+- Исполняемая проверка границ по живому дереву исходников.
+  [`arch_test.go:64`](../../internal/arch/arch_test.go#L64)
+
+**Домен**
+
+- Единый словарь sentinel-ошибок, опора всех следующих историй.
+  [`errs.go:10`](../../internal/application/errs/errs.go#L10)
+
+- Интерфейсы, объявленные потребителем, без типов адаптеров.
+  [`ports.go:1`](../../internal/application/ports/ports.go#L1)
+
+**Тесты и периферия**
+
+- Contract healthz: статус, тело и Content-Type.
+  [`server_test.go:53`](../../internal/adapter/driver/http/server_test.go#L53)
+
+- Табличные кейсы валидации, включая новые ветки.
+  [`config_test.go:42`](../../internal/config/config_test.go#L42)
+
+- Закрытие `-race`, `vet` и форматирования локально.
+  [`Makefile:5`](../../Makefile#L5)

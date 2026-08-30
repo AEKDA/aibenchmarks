@@ -37,6 +37,12 @@ func TestLoadDefaults(t *testing.T) {
 		t.Errorf("значения по умолчанию нарушают инвариант аренды: lease=%s send=%s",
 			cfg.LeaseTimeout, cfg.SendTimeout)
 	}
+	if cfg.ShutdownTimeout != 15*time.Second {
+		t.Errorf("ShutdownTimeout = %s, ожидалось 15s", cfg.ShutdownTimeout)
+	}
+	if cfg.WorkerCount != 8 {
+		t.Errorf("WorkerCount = %d, ожидалось 8", cfg.WorkerCount)
+	}
 }
 
 func TestLoadRejects(t *testing.T) {
@@ -79,6 +85,11 @@ func TestLoadRejects(t *testing.T) {
 			name:    "неразбираемое число воркеров",
 			mutate:  func(e map[string]string) { e["WHD_WORKER_COUNT"] = "many" },
 			wantHas: "cannot parse integer",
+		},
+		{
+			name:    "неположительное число воркеров",
+			mutate:  func(e map[string]string) { e["WHD_WORKER_COUNT"] = "0" },
+			wantHas: "must be positive",
 		},
 	}
 
@@ -127,6 +138,7 @@ func TestLoadAcceptsOverrides(t *testing.T) {
 	e["WHD_HTTP_ADDR"] = "127.0.0.1:9090"
 	e["WHD_SEND_TIMEOUT"] = "2s"
 	e["WHD_LEASE_TIMEOUT"] = "10s"
+	e["WHD_SHUTDOWN_TIMEOUT"] = "7s"
 	e["WHD_WORKER_COUNT"] = "4"
 
 	cfg, err := config.Load(env(e))
@@ -134,7 +146,8 @@ func TestLoadAcceptsOverrides(t *testing.T) {
 		t.Fatalf("ожидалась валидная конфигурация: %v", err)
 	}
 	if cfg.HTTPAddr != "127.0.0.1:9090" || cfg.SendTimeout != 2*time.Second ||
-		cfg.LeaseTimeout != 10*time.Second || cfg.WorkerCount != 4 {
+		cfg.LeaseTimeout != 10*time.Second || cfg.ShutdownTimeout != 7*time.Second ||
+		cfg.WorkerCount != 4 {
 		t.Errorf("переопределения не применены: %+v", cfg)
 	}
 }

@@ -45,7 +45,7 @@ func run(log *slog.Logger) error {
 	defer stop()
 
 	components := []runnable{
-		httpadapter.NewServer(cfg.HTTPAddr, cfg.ShutdownTimeout, log, httpadapter.Routes(log)),
+		httpadapter.NewServer(cfg.HTTPAddr, cfg.ShutdownTimeout, log, httpadapter.Routes()),
 	}
 
 	group, groupCtx := errgroup.WithContext(ctx)

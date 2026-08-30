@@ -42,6 +42,9 @@ func TestCheckRules(t *testing.T) {
 		{"driven и соседний driven", "internal/adapter/driven/postgres", arch.ModulePath + "/internal/adapter/driven/httpsender", true},
 
 		{"composition root и адаптер", "cmd/dispatcher", arch.ModulePath + "/internal/adapter/driven/postgres", false},
+		{"composition root и конфигурация", "cmd/dispatcher", arch.ModulePath + "/internal/config", false},
+		{"адаптер и конфигурация", "internal/adapter/driver/http", arch.ModulePath + "/internal/config", true},
+		{"driven и конфигурация", "internal/adapter/driven/postgres", arch.ModulePath + "/internal/config", true},
 		{"конфигурация и адаптер", "internal/config", arch.ModulePath + "/internal/adapter/driven/postgres", true},
 	}
 

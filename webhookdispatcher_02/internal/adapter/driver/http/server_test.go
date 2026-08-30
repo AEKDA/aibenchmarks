@@ -51,7 +51,7 @@ func start(t *testing.T, handler http.Handler, shutdownTimeout time.Duration) (s
 }
 
 func TestHealthzRespondsOK(t *testing.T) {
-	base, stop := start(t, httpadapter.Routes(discardLogger()), time.Second)
+	base, stop := start(t, httpadapter.Routes(), time.Second)
 
 	resp, err := http.Get(base + "/healthz")
 	if err != nil {
@@ -61,6 +61,18 @@ func TestHealthzRespondsOK(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("статус = %d, ожидалось 200", resp.StatusCode)
+	}
+
+	if got := resp.Header.Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, ожидалось application/json", got)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("чтение тела healthz: %v", err)
+	}
+	if string(body) != `{"status":"ok"}` {
+		t.Errorf("тело = %q, ожидалось {\"status\":\"ok\"}", body)
 	}
 
 	if err := stop(); err != nil {
@@ -73,7 +85,7 @@ func TestHealthzRespondsOK(t *testing.T) {
 func TestRunStopsOnContextCancel(t *testing.T) {
 	before := runtime.NumGoroutine()
 
-	_, stop := start(t, httpadapter.Routes(discardLogger()), time.Second)
+	_, stop := start(t, httpadapter.Routes(), time.Second)
 	if err := stop(); err != nil {
 		t.Fatalf("Run вернул ошибку: %v", err)
 	}

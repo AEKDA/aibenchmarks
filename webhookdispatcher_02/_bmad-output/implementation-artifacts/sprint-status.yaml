@@ -29,14 +29,14 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-30-2026 12:00
-last_updated: 08-30-2026 12:30
+last_updated: 08-30-2026 20:50
 project: webhookdispatcher_02
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 development_status:
   epic-1: in-progress
-  1-1-скелет-сервиса-с-жёсткими-границами-слоёв: in-progress
+  1-1-скелет-сервиса-с-жёсткими-границами-слоёв: review
   1-2-машина-состояний-попытки-доставки: backlog
   1-3-регистрация-подписки: backlog
   1-4-атомарная-запись-события-и-попыток-доставки: backlog
