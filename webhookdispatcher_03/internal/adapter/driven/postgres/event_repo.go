@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	pkgErr "github.com/pkg/errors"
 
@@ -27,6 +26,10 @@ func NewEventRepo(pool *pgxpool.Pool) *EventRepo {
 // SaveWithin атомарно сохраняет событие и его доставки в одной транзакции.
 // Если idem_key уже применён (в т.ч. из параллельной транзакции), возвращает
 // существующий EventID с Duplicate=true, ничего не записывая повторно.
+//
+// Идемпотентность реализована одним атомарным INSERT ... ON CONFLICT DO NOTHING:
+// в отличие от предпроверки SELECT-затем-INSERT не абортит транзакцию при гонке
+// (unique violation перевёл бы tx в aborted-состояние, сделав re-read бессмысленным).
 func (r *EventRepo) SaveWithin(ctx context.Context, key string, ev entity.Event, del []entity.Delivery) (ports.OutboxResult, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -34,28 +37,21 @@ func (r *EventRepo) SaveWithin(ctx context.Context, key string, ev entity.Event,
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
 
-	// Был ли ключ применён ранее?
-	var existingID uuid.UUID
-	err = tx.QueryRow(ctx, `SELECT id FROM events WHERE idem_key=$1`, key).Scan(&existingID)
-	if err == nil {
-		return ports.OutboxResult{EventID: existingID, Duplicate: true}, nil
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return ports.OutboxResult{}, pkgErr.Wrapf(err, "storage.EventRepo.SaveWithin.select-key")
-	}
-
-	if _, err := tx.Exec(ctx,
-		`INSERT INTO events(id,type,payload,created_at,idem_key) VALUES($1,$2,$3,$4,$5)`,
-		ev.ID, ev.Type, ev.Payload, ev.CreatedAt, key); err != nil {
-		// Гонка: параллельная транзакция успела вставить тот же ключ —
-		// возвращаем уже существующее событие вместо конфликта.
-		if isUniqueViolation(err) {
-			err = tx.QueryRow(ctx, `SELECT id FROM events WHERE idem_key=$1`, key).Scan(&existingID)
-			if err == nil {
-				return ports.OutboxResult{EventID: existingID, Duplicate: true}, nil
-			}
+	var insertedID uuid.UUID
+	err = tx.QueryRow(ctx,
+		`INSERT INTO events(id,type,payload,created_at,idem_key) VALUES($1,$2,$3,$4,$5)
+		 ON CONFLICT (idem_key) DO NOTHING RETURNING id`,
+		ev.ID, ev.Type, ev.Payload, ev.CreatedAt, key).Scan(&insertedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Ключ уже существует: ON CONFLICT DO NOTHING не абортит транзакцию,
+		// поэтому повторный SELECT валиден. Возвращаем ранее созданное событие.
+		var existingID uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT id FROM events WHERE idem_key=$1`, key).Scan(&existingID); err != nil {
 			return ports.OutboxResult{}, pkgErr.Wrapf(err, "storage.EventRepo.SaveWithin.re-read-key")
 		}
+		return ports.OutboxResult{EventID: existingID, Duplicate: true}, nil
+	}
+	if err != nil {
 		return ports.OutboxResult{}, pkgErr.Wrapf(err, "storage.EventRepo.SaveWithin.insert-event")
 	}
 
@@ -72,10 +68,4 @@ func (r *EventRepo) SaveWithin(ctx context.Context, key string, ev entity.Event,
 		return ports.OutboxResult{}, pkgErr.Wrapf(err, "storage.EventRepo.SaveWithin.commit")
 	}
 	return ports.OutboxResult{EventID: ev.ID}, nil
-}
-
-// isUniqueViolation определяет, является ли ошибка нарушением unique-ограничения.
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
