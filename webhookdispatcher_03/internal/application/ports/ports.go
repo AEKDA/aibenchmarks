@@ -11,8 +11,9 @@ import (
 	"webhookdispatcher/internal/application/entity"
 )
 
-//go:generate minimock -i SubscriptionRepo -o ./mocks/subscription_repo_mock.go -p mocks
 // SubscriptionRepo хранилище подписчиков.
+//
+//go:generate minimock -i SubscriptionRepo -o ./mocks/subscription_repo_mock.go -p mocks
 type SubscriptionRepo interface {
 	Save(ctx context.Context, s entity.Subscription) error
 	GetByID(ctx context.Context, id uuid.UUID) (entity.Subscription, error)
@@ -26,16 +27,18 @@ type OutboxResult struct {
 	Duplicate   bool // true, если idempotency-ключ уже был применён
 }
 
-//go:generate minimock -i EventRepo -o ./mocks/event_repo_mock.go -p mocks
 // EventRepo хранилище событий с идемпотентностью по ключу.
+//
+//go:generate minimock -i EventRepo -o ./mocks/event_repo_mock.go -p mocks
 type EventRepo interface {
 	// SaveWithin откладывает запись события и доставок в открытую транзакцию;
 	// возвращает Duplicate, если ключ уже использован (атомарно).
 	SaveWithin(ctx context.Context, idempotencyKey string, ev entity.Event, del []entity.Delivery) (OutboxResult, error)
 }
 
-//go:generate minimock -i DeliveryRepo -o ./mocks/delivery_repo_mock.go -p mocks
 // DeliveryRepo хранилище доставок с конкурентным забором задач.
+//
+//go:generate minimock -i DeliveryRepo -o ./mocks/delivery_repo_mock.go -p mocks
 type DeliveryRepo interface {
 	// ClaimNext захватывает до n задач PENDING или готовых RETRYING (SKIP LOCKED),
 	// переводит их в SENDING. Возвращает захваченные задачи.
@@ -45,22 +48,25 @@ type DeliveryRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (entity.Delivery, error)
 }
 
-//go:generate minimock -i Sender -o ./mocks/sender_mock.go -p mocks
 // Sender исходящий HTTP-клиент к подписчику.
+//
+//go:generate minimock -i Sender -o ./mocks/sender_mock.go -p mocks
 type Sender interface {
 	// Send доставляет payload по URL с подписью. Возвращает HTTP-статус.
 	Send(ctx context.Context, url, userAgent, signature string, payload []byte) (int, error)
 }
 
-//go:generate minimock -i RateLimiter -o ./mocks/rate_limiter_mock.go -p mocks
 // RateLimiter ограничивает RPS на хост.
+//
+//go:generate minimock -i RateLimiter -o ./mocks/rate_limiter_mock.go -p mocks
 type RateLimiter interface {
 	// Allow блокирует до появления слота для хоста. Ошибка — если хоста нет в конфиге.
 	Allow(ctx context.Context, host string) error
 }
 
-//go:generate minimock -i Clock -o ./mocks/clock_mock.go -p mocks
 // Clock абстракция времени для тестов.
+//
+//go:generate minimock -i Clock -o ./mocks/clock_mock.go -p mocks
 type Clock interface {
 	Now() time.Time
 }

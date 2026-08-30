@@ -14,10 +14,10 @@ import (
 
 // CreateSubscriptionIn входные данные регистрации подписчика.
 type CreateSubscriptionIn struct {
-	URL     string
-	Secret  string
-	Events  []string
-	MaxRPS  int
+	URL    string
+	Secret string
+	Events []string
+	MaxRPS int
 }
 
 // CreateSubscription регистрирует подписчика.

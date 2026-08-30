@@ -89,18 +89,18 @@ func TestPublishEventValidation(t *testing.T) {
 	now := mustTime(t, "2026-01-01T00:00:00Z")
 
 	cases := []struct {
-		name  string
-		in    PublishEventIn
+		name    string
+		in      PublishEventIn
 		wantErr error
 	}{
 		{
-			name: "пустой Type",
-			in: PublishEventIn{Type: "", Payload: []byte("{}"), IdempotencyKey: "k1", Now: now},
+			name:    "пустой Type",
+			in:      PublishEventIn{Type: "", Payload: []byte("{}"), IdempotencyKey: "k1", Now: now},
 			wantErr: errs.ErrInvalid,
 		},
 		{
-			name: "пустой IdempotencyKey",
-			in: PublishEventIn{Type: "order.created", Payload: []byte("{}"), IdempotencyKey: "", Now: now},
+			name:    "пустой IdempotencyKey",
+			in:      PublishEventIn{Type: "order.created", Payload: []byte("{}"), IdempotencyKey: "", Now: now},
 			wantErr: errs.ErrInvalid,
 		},
 	}
